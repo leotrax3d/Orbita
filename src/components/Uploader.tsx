@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { Segmented, Slider } from './ui';
+import type { TraceMode } from '../lib/contour';
 
 export type Status = { type: 'idle' | 'info' | 'error'; msg: string };
 
@@ -6,9 +8,21 @@ interface UploaderProps {
   onImage: (file: File) => void;
   busy: boolean;
   status: Status;
+  mode: TraceMode;
+  detail: number;
+  onMode: (m: TraceMode) => void;
+  onDetail: (d: number) => void;
 }
 
-export default function Uploader({ onImage, busy, status }: UploaderProps) {
+export default function Uploader({
+  onImage,
+  busy,
+  status,
+  mode,
+  detail,
+  onMode,
+  onDetail,
+}: UploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -18,7 +32,7 @@ export default function Uploader({ onImage, busy, status }: UploaderProps) {
   };
 
   return (
-    <div>
+    <div className="rounded-2xl border border-edge bg-white/40 p-5">
       <div
         role="button"
         tabIndex={0}
@@ -40,7 +54,7 @@ export default function Uploader({ onImage, busy, status }: UploaderProps) {
           setDragging(false);
           pick(e.dataTransfer.files);
         }}
-        className={`group cursor-pointer rounded-2xl border-2 border-dashed px-4 py-7 text-center transition-colors ${
+        className={`group cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
           dragging ? 'border-accent bg-accent/5' : 'border-edge hover:border-accent/60'
         }`}
       >
@@ -61,9 +75,7 @@ export default function Uploader({ onImage, busy, status }: UploaderProps) {
         <p className="mt-2 font-heading text-sm font-medium text-ink">
           {busy ? 'Processing…' : 'Drop an image or click to upload'}
         </p>
-        <p className="mt-1 font-body text-xs text-ink/55">
-          PNG · JPG · SVG — high-contrast silhouettes trace best
-        </p>
+        <p className="mt-1 font-body text-xs text-ink/55">PNG · JPG · SVG</p>
         <input
           ref={inputRef}
           type="file"
@@ -73,9 +85,40 @@ export default function Uploader({ onImage, busy, status }: UploaderProps) {
         />
       </div>
 
+      <div className="mt-4">
+        <span className="mb-1.5 block font-heading text-sm font-medium text-ink/80">Trace mode</span>
+        <Segmented
+          value={mode}
+          onChange={onMode}
+          options={[
+            { value: 'outline', label: 'Outline' },
+            { value: 'detail', label: 'Photo / detail' },
+          ]}
+        />
+        <p className="mt-1.5 font-body text-xs text-ink/55">
+          {mode === 'outline'
+            ? 'One silhouette — best for logos & bold shapes.'
+            : 'Edge tracing across many parts — best for portraits & photos.'}
+        </p>
+      </div>
+
+      {mode === 'detail' && (
+        <div className="mt-3">
+          <Slider
+            label="Detail"
+            value={detail}
+            min={1}
+            max={10}
+            step={1}
+            display={`${detail}`}
+            onChange={onDetail}
+          />
+        </div>
+      )}
+
       {status.msg && (
         <p
-          className={`mt-2 font-body text-xs ${
+          className={`mt-3 font-body text-xs ${
             status.type === 'error' ? 'text-accent-dark' : 'text-ink/60'
           }`}
           role={status.type === 'error' ? 'alert' : 'status'}
