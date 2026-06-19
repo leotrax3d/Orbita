@@ -4,6 +4,8 @@ import { SAMPLE_COUNT, type Shape } from '../lib/fourier';
 export interface EpicycleCanvasHandle {
   /** Returns the current frame as a PNG data URL (or null if unavailable). */
   toPNG: () => string | null;
+  /** The underlying canvas element, for captureStream-based video recording. */
+  getCanvas: () => HTMLCanvasElement | null;
 }
 
 export type Theme = 'light' | 'dark';
@@ -62,6 +64,7 @@ function EpicycleCanvas(props: Props, ref: React.Ref<EpicycleCanvasHandle>) {
 
   useImperativeHandle(ref, () => ({
     toPNG: () => canvasRef.current?.toDataURL('image/png') ?? null,
+    getCanvas: () => canvasRef.current,
   }));
 
   const sizeRef = useRef({ w: 0, h: 0 });
