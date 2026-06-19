@@ -101,4 +101,4 @@ repo name to hard-code. For a strictly root deployment you may switch to
 
 ## License
 
-MIT © leotrax3d
+MIT © leotrax3d 
