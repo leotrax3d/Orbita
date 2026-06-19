@@ -16,12 +16,18 @@ z(t) = Σ  c_k · e^{ i (2π f_k t + φ_k) }
 Each term is a circle of radius `|c_k|` spinning at frequency `f_k` from phase
 `φ_k`. Summed tip-to-tail and animated, their endpoint draws the contour.
 
+**Live demo → https://leotrax3d.github.io/Orbita/**
+
 ## Features
 
 - **Upload → trace.** Any high-contrast image (PNG · JPG · SVG). Drag-and-drop or click.
+- **Draw your own.** Sketch a closed stroke on a pad and decompose it instantly.
+- **Preset shapes.** Heart, star, flower, infinity — switch with one click.
 - **FFT decomposition.** Otsu threshold → largest connected component →
   Moore-neighbor boundary trace → arc-length resample → FFT (`mathjs`).
 - **Live controls.** Epicycle count (20–500), speed, zoom — all at 60 FPS on a single canvas.
+- **View options.** Toggle the epicycle circles, overlay the target contour
+  (ghost) to compare the approximation, restart the trace, or export the frame as PNG.
 - **Static & portable.** Vite build, deployable to GitHub Pages with one command or on push.
 
 ## Tech stack
@@ -49,18 +55,22 @@ npm run preview  # preview the production build locally
 
 ```
 src/
-├── main.tsx                 # React entry
-├── App.tsx                  # layout + state (count / speed / zoom / source)
+├── main.tsx                 # React entry (wraps App in an ErrorBoundary)
+├── App.tsx                  # layout + state (shape / count / speed / zoom / view)
 ├── index.css                # Tailwind + slider styles
 ├── components/
 │   ├── EpicycleCanvas.tsx   # the animated signature canvas (requestAnimationFrame)
 │   ├── Controls.tsx         # sliders + play/pause
+│   ├── PresetPicker.tsx     # preset shapes + "draw your own"
+│   ├── DrawModal.tsx        # sketch-pad for a custom contour
+│   ├── ViewOptions.tsx      # circle/ghost toggles, restart, export PNG
 │   ├── Uploader.tsx         # drag-and-drop image input
+│   ├── ErrorBoundary.tsx    # visible fallback instead of a blank screen
 │   └── Header.tsx           # title + intro
 └── lib/
     ├── contour.ts           # image → ordered boundary; resample + normalize (pure)
-    ├── fourier.ts           # FFT → epicycles (mathjs)
-    └── presets.ts           # default heart contour
+    ├── fourier.ts           # FFT → epicycles + target points (mathjs)
+    └── presets.ts           # parametric preset contours
 ```
 
 ## Deploying to GitHub Pages
@@ -86,11 +96,12 @@ Then set **Settings → Pages → Source → Deploy from a branch → `gh-pages`
 
 ### Base path
 
-`vite.config.ts` uses `base: './'` (relative asset URLs), so the build runs
-unchanged whether it is served from a project page
-(`https://<user>.github.io/<repo>/`), a user/org page, or a custom domain — no
-repo name to hard-code. For a strictly root deployment you may switch to
-`base: '/'`.
+`vite.config.ts` uses `base: '/Orbita/'` — an absolute path matching the GitHub
+Pages project URL `https://leotrax3d.github.io/Orbita/`. Absolute asset URLs
+resolve correctly whether or not the page URL carries a trailing slash (a relative
+base can break in the no-slash case). **If you fork or rename the repo, change
+this to `/<your-repo-name>/`** (case-sensitive), or `/` for a user/org page or a
+custom domain.
 
 ## Tips for good contours
 
