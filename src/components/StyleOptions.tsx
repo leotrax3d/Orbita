@@ -15,11 +15,15 @@ interface Props {
   theme: Theme;
   traceColor: string;
   glow: boolean;
+  showCircles: boolean;
+  showGhost: boolean;
   onStrokeWidth: (v: number) => void;
   onTrailLength: (v: number) => void;
   onTheme: (v: Theme) => void;
   onTraceColor: (v: string) => void;
   onToggleGlow: () => void;
+  onToggleCircles: () => void;
+  onToggleGhost: () => void;
 }
 
 export default function StyleOptions({
@@ -28,11 +32,15 @@ export default function StyleOptions({
   theme,
   traceColor,
   glow,
+  showCircles,
+  showGhost,
   onStrokeWidth,
   onTrailLength,
   onTheme,
   onTraceColor,
   onToggleGlow,
+  onToggleCircles,
+  onToggleGhost,
 }: Props) {
   return (
     <div className="rounded-2xl border border-edge bg-white/40 p-5">
@@ -85,17 +93,19 @@ export default function StyleOptions({
                   aria-label={c.name}
                   aria-pressed={active}
                   onClick={() => onTraceColor(c.value)}
-                  className={`h-7 w-7 rounded-full transition-transform ${
-                    active ? 'scale-110 ring-2 ring-offset-2 ring-offset-paper' : 'hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: c.value, boxShadow: active ? `0 0 0 2px ${c.value}` : undefined }}
+                  className={`h-7 w-7 rounded-full transition-transform ${active ? 'scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: c.value, boxShadow: active ? `0 0 0 2px #faf9f5, 0 0 0 4px ${c.value}` : undefined }}
                 />
               );
             })}
           </div>
         </div>
 
-        <Toggle label="Glow" checked={glow} onChange={onToggleGlow} />
+        <div className="space-y-2.5 border-t border-edge pt-3">
+          <Toggle label="Glow" checked={glow} onChange={onToggleGlow} />
+          <Toggle label="Epicycle circles" checked={showCircles} onChange={onToggleCircles} />
+          <Toggle label="Target overlay" checked={showGhost} onChange={onToggleGhost} />
+        </div>
       </div>
     </div>
   );

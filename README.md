@@ -28,13 +28,19 @@ Each term is a circle of radius `|c_k|` spinning at frequency `f_k` from phase
     what lets Orbita trace **portraits and photos**: the features are separate
     parts, joined so a single epicycle chain draws the whole image. A *Detail*
     slider controls how fine the edges are.
-- **Draw your own.** Sketch a closed stroke on a pad and decompose it instantly.
+- **Draw on the canvas.** Sketch a closed stroke directly on the main canvas and
+  decompose it live.
 - **Preset shapes.** Heart, star, flower, infinity — switch with one click.
 - **Style controls.** Stroke width, trail length (comet → full), light/dark
-  canvas, trace color, and glow.
+  canvas, trace color, glow, epicycle circles, and a target overlay.
 - **Animation controls.** Epicycle count (20–500), speed, zoom — 60 FPS on a single canvas.
-- **View options.** Toggle the epicycle circles, overlay the target contour
-  (ghost) to compare the approximation, restart the trace, or export the frame as PNG.
+- **Export.** PNG frame, SVG path, and a **recorded video** of the animation
+  (`captureStream` + `MediaRecorder`; MP4 where supported, otherwise WebM).
+- **Explain panel.** Built-in walkthrough of the Fourier/epicycle math and the
+  image pipeline.
+- **No-scroll desktop layout.** Full-height shell: the canvas stays in view while
+  a tabbed control rail (Source · Motion · Style · Export · Explain) keeps every
+  setting reachable without scrolling the page.
 - **FFT core.** Arc-length resample → normalize → FFT (`mathjs`) → epicycles
   `{freq, amp, phase}`, sorted by amplitude.
 - **Static & portable.** Vite build, deployable to GitHub Pages with one command or on push.
@@ -65,19 +71,20 @@ npm run preview  # preview the production build locally
 ```
 src/
 ├── main.tsx                 # React entry (wraps App in an ErrorBoundary)
-├── App.tsx                  # layout + state (shape / count / speed / zoom / view)
+├── App.tsx                  # full-height tabbed shell + all state
 ├── index.css                # Tailwind + slider styles
 ├── components/
-│   ├── EpicycleCanvas.tsx   # the animated signature canvas (requestAnimationFrame)
-│   ├── Controls.tsx         # count / speed / zoom sliders + play/pause
-│   ├── StyleOptions.tsx     # stroke width, trail, theme, color, glow
-│   ├── PresetPicker.tsx     # preset shapes + "draw your own"
-│   ├── DrawModal.tsx        # sketch-pad for a custom contour
-│   ├── ViewOptions.tsx      # circle/ghost toggles, restart, export PNG
+│   ├── EpicycleCanvas.tsx   # animated canvas (RAF); exposes toPNG + getCanvas
+│   ├── LiveDraw.tsx         # draw directly on the main canvas
+│   ├── Controls.tsx         # count / speed / zoom + play/pause + restart
+│   ├── StyleOptions.tsx     # stroke, trail, theme, color, glow, toggles
+│   ├── ExportPanel.tsx      # PNG / SVG / video recording
+│   ├── ExplainPanel.tsx     # how-it-works walkthrough
+│   ├── PresetPicker.tsx     # preset shapes + "draw on canvas"
 │   ├── Uploader.tsx         # image input + trace mode (outline / photo) + detail
-│   ├── ui.tsx               # shared Slider / Toggle / Segmented primitives
+│   ├── ui.tsx               # shared Slider / Toggle / Segmented / Tabs
 │   ├── ErrorBoundary.tsx    # visible fallback instead of a blank screen
-│   └── Header.tsx           # title + intro
+│   └── Header.tsx           # slim title bar
 └── lib/
     ├── contour.ts           # image → contour(s): outline + Sobel/edge/stitch; resample/normalize
     ├── fourier.ts           # FFT → epicycles + target points (mathjs)

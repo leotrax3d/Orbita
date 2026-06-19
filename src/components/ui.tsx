@@ -85,3 +85,32 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
     </div>
   );
 }
+
+interface TabsProps<T extends string> {
+  tabs: ReadonlyArray<{ value: T; label: string }>;
+  value: T;
+  onChange: (v: T) => void;
+}
+
+export function Tabs<T extends string>({ tabs, value, onChange }: TabsProps<T>) {
+  return (
+    <div className="flex gap-1 rounded-xl border border-edge bg-white/50 p-1">
+      {tabs.map((t) => {
+        const active = t.value === value;
+        return (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => onChange(t.value)}
+            aria-pressed={active}
+            className={`flex-1 rounded-lg px-1.5 py-2 font-heading text-xs font-medium transition-colors ${
+              active ? 'bg-accent text-paper shadow-sm' : 'text-ink/65 hover:text-accent'
+            }`}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
