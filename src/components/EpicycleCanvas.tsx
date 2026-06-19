@@ -6,6 +6,8 @@ export interface EpicycleCanvasHandle {
   toPNG: () => string | null;
 }
 
+export type Theme = 'light' | 'dark';
+
 interface Props {
   shape: Shape;
   count: number;
@@ -14,6 +16,11 @@ interface Props {
   playing: boolean;
   showCircles: boolean;
   showGhost: boolean;
+  strokeWidth: number;
+  trailLength: number; // 0..1 fraction of the full period kept on screen
+  theme: Theme;
+  traceColor: string;
+  glow: boolean;
   /** Bump to restart the trace from t = 0. */
   restartToken: number;
 }
@@ -25,29 +32,33 @@ interface Pt {
 
 const TWO_PI = Math.PI * 2;
 
+const THEMES: Record<Theme, { bg: string; circle: string; radius: string; ghost: string }> = {
+  light: {
+    bg: '#faf9f5',
+    circle: 'rgba(45, 42, 38, 0.10)',
+    radius: 'rgba(45, 42, 38, 0.18)',
+    ghost: 'rgba(45, 42, 38, 0.22)',
+  },
+  dark: {
+    bg: '#1c1a17',
+    circle: 'rgba(250, 249, 245, 0.10)',
+    radius: 'rgba(250, 249, 245, 0.22)',
+    ghost: 'rgba(250, 249, 245, 0.25)',
+  },
+};
+
 /**
  * The signature surface: draws the epicycle chain and the path its tip traces.
- * Slider/toggle values are read through refs so the animation loop never
+ * Slider/toggle/style values are read through refs so the animation loop never
  * restarts; it restarts only on a new shape or an explicit trace reset.
  */
-function EpicycleCanvas(
-  { shape, count, speed, zoom, playing, showCircles, showGhost, restartToken }: Props,
-  ref: React.Ref<EpicycleCanvasHandle>,
-) {
+function EpicycleCanvas(props: Props, ref: React.Ref<EpicycleCanvasHandle>) {
+  const { shape, restartToken } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const countRef = useRef(count);
-  const speedRef = useRef(speed);
-  const zoomRef = useRef(zoom);
-  const playingRef = useRef(playing);
-  const circlesRef = useRef(showCircles);
-  const ghostRef = useRef(showGhost);
-  countRef.current = count;
-  speedRef.current = speed;
-  zoomRef.current = zoom;
-  playingRef.current = playing;
-  circlesRef.current = showCircles;
-  ghostRef.current = showGhost;
+  // Keep the latest props in a ref the RAF loop can read without re-subscribing.
+  const propsRef = useRef(props);
+  propsRef.current = props;
 
   useImperativeHandle(ref, () => ({
     toPNG: () => canvasRef.current?.toDataURL('image/png') ?? null,
@@ -80,19 +91,21 @@ function EpicycleCanvas(
     let path: Pt[] = [];
 
     const render = () => {
+      const p = propsRef.current;
       const { w, h } = sizeRef.current;
+      const theme = THEMES[p.theme];
 
-      ctx.fillStyle = '#faf9f5';
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = theme.bg;
       ctx.fillRect(0, 0, w, h);
 
       if (epicycles.length > 0 && w > 0 && h > 0) {
         const cx = w / 2;
         const cy = h / 2;
-        const scale = Math.min(w, h) * 0.42 * zoomRef.current;
+        const scale = Math.min(w, h) * 0.42 * p.zoom;
 
-        // Target contour (ghost) underneath the animation.
-        if (ghostRef.current && points.length > 1) {
-          ctx.strokeStyle = 'rgba(45, 42, 38, 0.22)';
+        if (p.showGhost && points.length > 1) {
+          ctx.strokeStyle = theme.ghost;
           ctx.lineWidth = 1.5;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
@@ -105,59 +118,74 @@ function EpicycleCanvas(
           ctx.setLineDash([]);
         }
 
-        const n = Math.min(countRef.current, epicycles.length);
+        const n = Math.min(p.count, epicycles.length);
         let x = cx;
         let y = cy;
 
-        ctx.lineWidth = 1;
-        for (let i = 0; i < n; i++) {
-          const e = epicycles[i];
-          const r = scale * e.amp;
-          const px = x;
-          const py = y;
-          const angle = e.freq * time + e.phase;
-          x += r * Math.cos(angle);
-          y += r * Math.sin(angle);
-
-          // Skip sub-pixel circles — they cost draw calls without being visible.
-          if (circlesRef.current && r > 0.6) {
-            ctx.strokeStyle = 'rgba(45, 42, 38, 0.10)';
-            ctx.beginPath();
-            ctx.arc(px, py, r, 0, TWO_PI);
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(45, 42, 38, 0.18)';
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(x, y);
-            ctx.stroke();
+        if (p.showCircles) {
+          ctx.lineWidth = 1;
+          for (let i = 0; i < n; i++) {
+            const e = epicycles[i];
+            const r = scale * e.amp;
+            const px = x;
+            const py = y;
+            const angle = e.freq * time + e.phase;
+            x += r * Math.cos(angle);
+            y += r * Math.sin(angle);
+            if (r > 0.6) {
+              ctx.strokeStyle = theme.circle;
+              ctx.beginPath();
+              ctx.arc(px, py, r, 0, TWO_PI);
+              ctx.stroke();
+              ctx.strokeStyle = theme.radius;
+              ctx.beginPath();
+              ctx.moveTo(px, py);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+          }
+        } else {
+          // Still advance the chain to find the tip, without drawing it.
+          for (let i = 0; i < n; i++) {
+            const e = epicycles[i];
+            const r = scale * e.amp;
+            const angle = e.freq * time + e.phase;
+            x += r * Math.cos(angle);
+            y += r * Math.sin(angle);
           }
         }
 
-        if (playingRef.current) {
+        const maxLen = Math.max(2, Math.round(SAMPLE_COUNT * p.trailLength));
+        if (p.playing) {
           path.push({ x, y });
-          if (path.length > SAMPLE_COUNT) path.shift();
+          while (path.length > maxLen) path.shift();
+        } else {
+          while (path.length > maxLen) path.shift();
         }
 
         if (path.length > 1) {
-          ctx.strokeStyle = '#d97757';
-          ctx.lineWidth = 2;
+          if (p.glow) {
+            ctx.shadowColor = p.traceColor;
+            ctx.shadowBlur = 12;
+          }
+          ctx.strokeStyle = p.traceColor;
+          ctx.lineWidth = p.strokeWidth;
           ctx.lineJoin = 'round';
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(path[0].x, path[0].y);
           for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
           ctx.stroke();
+          ctx.shadowBlur = 0;
         }
 
-        // Leading tip.
-        ctx.fillStyle = '#d97757';
+        ctx.fillStyle = p.traceColor;
         ctx.beginPath();
-        ctx.arc(x, y, 3, 0, TWO_PI);
+        ctx.arc(x, y, Math.max(2, p.strokeWidth), 0, TWO_PI);
         ctx.fill();
 
-        if (playingRef.current) {
-          time += (TWO_PI / SAMPLE_COUNT) * speedRef.current;
+        if (p.playing) {
+          time += (TWO_PI / SAMPLE_COUNT) * p.speed;
           if (time >= TWO_PI) time -= TWO_PI;
         }
       }

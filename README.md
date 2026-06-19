@@ -20,14 +20,23 @@ Each term is a circle of radius `|c_k|` spinning at frequency `f_k` from phase
 
 ## Features
 
-- **Upload → trace.** Any high-contrast image (PNG · JPG · SVG). Drag-and-drop or click.
+- **Two trace modes.**
+  - *Outline* — Otsu threshold → largest connected component → Moore-neighbor
+    boundary trace. Best for logos and bold silhouettes.
+  - *Photo / detail* — **Sobel edge detection** → dilation → many edge contours
+    **stitched into one continuous path** (nearest-endpoint ordering). This is
+    what lets Orbita trace **portraits and photos**: the features are separate
+    parts, joined so a single epicycle chain draws the whole image. A *Detail*
+    slider controls how fine the edges are.
 - **Draw your own.** Sketch a closed stroke on a pad and decompose it instantly.
 - **Preset shapes.** Heart, star, flower, infinity — switch with one click.
-- **FFT decomposition.** Otsu threshold → largest connected component →
-  Moore-neighbor boundary trace → arc-length resample → FFT (`mathjs`).
-- **Live controls.** Epicycle count (20–500), speed, zoom — all at 60 FPS on a single canvas.
+- **Style controls.** Stroke width, trail length (comet → full), light/dark
+  canvas, trace color, and glow.
+- **Animation controls.** Epicycle count (20–500), speed, zoom — 60 FPS on a single canvas.
 - **View options.** Toggle the epicycle circles, overlay the target contour
   (ghost) to compare the approximation, restart the trace, or export the frame as PNG.
+- **FFT core.** Arc-length resample → normalize → FFT (`mathjs`) → epicycles
+  `{freq, amp, phase}`, sorted by amplitude.
 - **Static & portable.** Vite build, deployable to GitHub Pages with one command or on push.
 
 ## Tech stack
@@ -60,15 +69,17 @@ src/
 ├── index.css                # Tailwind + slider styles
 ├── components/
 │   ├── EpicycleCanvas.tsx   # the animated signature canvas (requestAnimationFrame)
-│   ├── Controls.tsx         # sliders + play/pause
+│   ├── Controls.tsx         # count / speed / zoom sliders + play/pause
+│   ├── StyleOptions.tsx     # stroke width, trail, theme, color, glow
 │   ├── PresetPicker.tsx     # preset shapes + "draw your own"
 │   ├── DrawModal.tsx        # sketch-pad for a custom contour
 │   ├── ViewOptions.tsx      # circle/ghost toggles, restart, export PNG
-│   ├── Uploader.tsx         # drag-and-drop image input
+│   ├── Uploader.tsx         # image input + trace mode (outline / photo) + detail
+│   ├── ui.tsx               # shared Slider / Toggle / Segmented primitives
 │   ├── ErrorBoundary.tsx    # visible fallback instead of a blank screen
 │   └── Header.tsx           # title + intro
 └── lib/
-    ├── contour.ts           # image → ordered boundary; resample + normalize (pure)
+    ├── contour.ts           # image → contour(s): outline + Sobel/edge/stitch; resample/normalize
     ├── fourier.ts           # FFT → epicycles + target points (mathjs)
     └── presets.ts           # parametric preset contours
 ```
@@ -103,12 +114,15 @@ base can break in the no-slash case). **If you fork or rename the repo, change
 this to `/<your-repo-name>/`** (case-sensitive), or `/` for a user/org page or a
 custom domain.
 
-## Tips for good contours
+## Tips for good results
 
-- High-contrast **silhouettes**, **logos**, and **line art** trace best.
-- Orbita traces the **single largest shape**; busy photos give noisy results.
+- **Logos / silhouettes / line art** → *Outline* mode traces the single largest shape.
+- **Portraits / photos** → *Photo / detail* mode. Raise **Detail** for more edges
+  (more parts stitched together); lower it for a cleaner, sparser sketch.
 - More epicycles = finer detail, but the broad form is already captured by the
-  first few dozen — try the slider to feel the convergence.
+  first few dozen — try the **count** slider to feel the convergence.
+- For a clean look on photos, lower the **Trail** so the tip leaves a comet rather
+  than the full overlapping path, and try **Dark** canvas with **Glow**.
 
 ## License
 
