@@ -19,6 +19,12 @@ export interface Epicycle {
   phase: number;
 }
 
+/** Epicycles plus the normalized target contour they approximate. */
+export interface Shape {
+  epicycles: Epicycle[];
+  points: Complex[];
+}
+
 /** Number of samples taken around a contour — also the number of epicycles produced. */
 export const SAMPLE_COUNT = 1024;
 
@@ -47,9 +53,9 @@ export function computeEpicycles(signal: Complex[]): Epicycle[] {
   return epicycles;
 }
 
-/** Full pipeline: raw ordered boundary -> resample -> normalize -> epicycles. */
-export function contourToEpicycles(boundary: Pt[], sampleCount = SAMPLE_COUNT): Epicycle[] {
+/** Full pipeline: raw ordered boundary -> resample -> normalize -> epicycles + target. */
+export function contourToShape(boundary: Pt[], sampleCount = SAMPLE_COUNT): Shape {
   const resampled = resampleClosed(boundary, sampleCount);
-  const normalized = normalize(resampled);
-  return computeEpicycles(normalized);
+  const points = normalize(resampled);
+  return { epicycles: computeEpicycles(points), points };
 }

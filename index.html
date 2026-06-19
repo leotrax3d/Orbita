@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/Orbita/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
@@ -16,9 +16,42 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Shown until React mounts; replaced on first render. If it lingers,
+         the bundle failed to load (check the base path / network tab). */
+      #orbita-boot {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        background: #faf9f5;
+        color: #2d2a26;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.95rem;
+      }
+      #orbita-boot .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 9999px;
+        background: #d97757;
+        animation: orbita-pulse 1s ease-in-out infinite;
+      }
+      @keyframes orbita-pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="orbita-boot"><span class="dot"></span> Loading Orbita…</div>
+    </div>
+    <noscript>
+      <p style="padding: 2rem; font-family: system-ui, sans-serif; color: #2d2a26">
+        Orbita needs JavaScript to compute the Fourier transform and animate the canvas.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

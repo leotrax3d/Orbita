@@ -1,34 +1,58 @@
-import { useEffect, useRef } from 'react';
-import { SAMPLE_COUNT, type Epicycle } from '../lib/fourier';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { SAMPLE_COUNT, type Shape } from '../lib/fourier';
+
+export interface EpicycleCanvasHandle {
+  /** Returns the current frame as a PNG data URL (or null if unavailable). */
+  toPNG: () => string | null;
+}
 
 interface Props {
-  epicycles: Epicycle[];
+  shape: Shape;
   count: number;
   speed: number;
   zoom: number;
   playing: boolean;
+  showCircles: boolean;
+  showGhost: boolean;
+  /** Bump to restart the trace from t = 0. */
+  restartToken: number;
+}
+
+interface Pt {
+  x: number;
+  y: number;
 }
 
 const TWO_PI = Math.PI * 2;
 
 /**
  * The signature surface: draws the epicycle chain and the path its tip traces.
- * Slider values are read through refs so the animation loop never restarts; it
- * only restarts when a new contour (`epicycles`) is loaded.
+ * Slider/toggle values are read through refs so the animation loop never
+ * restarts; it restarts only on a new shape or an explicit trace reset.
  */
-export default function EpicycleCanvas({ epicycles, count, speed, zoom, playing }: Props) {
+function EpicycleCanvas(
+  { shape, count, speed, zoom, playing, showCircles, showGhost, restartToken }: Props,
+  ref: React.Ref<EpicycleCanvasHandle>,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const countRef = useRef(count);
   const speedRef = useRef(speed);
   const zoomRef = useRef(zoom);
   const playingRef = useRef(playing);
+  const circlesRef = useRef(showCircles);
+  const ghostRef = useRef(showGhost);
   countRef.current = count;
   speedRef.current = speed;
   zoomRef.current = zoom;
   playingRef.current = playing;
+  circlesRef.current = showCircles;
+  ghostRef.current = showGhost;
 
-  // CSS-pixel size, kept current by a ResizeObserver so we resize off the render path.
+  useImperativeHandle(ref, () => ({
+    toPNG: () => canvasRef.current?.toDataURL('image/png') ?? null,
+  }));
+
   const sizeRef = useRef({ w: 0, h: 0 });
 
   useEffect(() => {
@@ -50,6 +74,7 @@ export default function EpicycleCanvas({ epicycles, count, speed, zoom, playing 
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
+    const { epicycles, points } = shape;
     let raf = 0;
     let time = 0;
     let path: Pt[] = [];
@@ -64,8 +89,23 @@ export default function EpicycleCanvas({ epicycles, count, speed, zoom, playing 
         const cx = w / 2;
         const cy = h / 2;
         const scale = Math.min(w, h) * 0.42 * zoomRef.current;
-        const n = Math.min(countRef.current, epicycles.length);
 
+        // Target contour (ghost) underneath the animation.
+        if (ghostRef.current && points.length > 1) {
+          ctx.strokeStyle = 'rgba(45, 42, 38, 0.22)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(cx + scale * points[0].re, cy + scale * points[0].im);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(cx + scale * points[i].re, cy + scale * points[i].im);
+          }
+          ctx.closePath();
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        const n = Math.min(countRef.current, epicycles.length);
         let x = cx;
         let y = cy;
 
@@ -80,7 +120,7 @@ export default function EpicycleCanvas({ epicycles, count, speed, zoom, playing 
           y += r * Math.sin(angle);
 
           // Skip sub-pixel circles — they cost draw calls without being visible.
-          if (r > 0.6) {
+          if (circlesRef.current && r > 0.6) {
             ctx.strokeStyle = 'rgba(45, 42, 38, 0.10)';
             ctx.beginPath();
             ctx.arc(px, py, r, 0, TWO_PI);
@@ -131,12 +171,11 @@ export default function EpicycleCanvas({ epicycles, count, speed, zoom, playing 
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [epicycles]);
+  }, [shape, restartToken]);
 
-  return <canvas ref={canvasRef} className="block h-full w-full" aria-label="Fourier epicycle animation" />;
+  return (
+    <canvas ref={canvasRef} className="block h-full w-full" aria-label="Fourier epicycle animation" />
+  );
 }
 
-interface Pt {
-  x: number;
-  y: number;
-}
+export default forwardRef(EpicycleCanvas);

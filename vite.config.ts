@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// `base: './'` emits relative asset URLs so the production build runs unchanged
-// on a GitHub Pages *project* site (served from https://<user>.github.io/<repo>/)
-// without hard-coding the repository name. It also works on a user/org page or a
-// custom domain. If you prefer absolute paths for a root deployment, set `base: '/'`.
+// Absolute base for the GitHub Pages project site. The deploy publishes to
+// https://leotrax3d.github.io/Orbita/, so assets must resolve under `/Orbita/`
+// regardless of whether the page URL carries a trailing slash. If you fork or
+// rename the repo, change this to `/<your-repo-name>/` (or `/` for a user page
+// or custom domain).
 export default defineConfig({
-  base: './',
+  base: '/Orbita/',
   plugins: [react()],
   build: {
     outDir: 'dist',
