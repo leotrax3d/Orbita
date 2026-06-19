@@ -32,8 +32,14 @@ Each term is a circle of radius `|c_k|` spinning at frequency `f_k` from phase
   decompose it live.
 - **Preset shapes.** Heart, star, flower, infinity — switch with one click.
 - **Style controls.** Stroke width, trail length (comet → full), light/dark
-  canvas, trace color, glow, epicycle circles, and a target overlay.
-- **Animation controls.** Epicycle count (20–500), speed, zoom — 60 FPS on a single canvas.
+  canvas, trace color (swatches **or any custom color**), **rainbow trail**,
+  glow, epicycle circles, and a target overlay.
+- **Animation controls.** Epicycle count (20–500), speed, zoom, **reverse
+  direction** — 60 FPS on a single canvas. Keyboard: **Space** play/pause, **R** restart.
+- **Amplitude spectrum.** A live bar chart (in Explain) of the strongest
+  frequency components.
+- **Resilient loading.** A self-healing boot screen reloads past a stale cached
+  build instead of getting stuck.
 - **Export.** PNG frame, SVG path, and a **recorded video** of the animation
   (`captureStream` + `MediaRecorder`; MP4 where supported, otherwise WebM).
 - **Explain panel.** Built-in walkthrough of the Fourier/epicycle math and the

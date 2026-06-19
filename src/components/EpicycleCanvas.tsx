@@ -23,6 +23,8 @@ interface Props {
   theme: Theme;
   traceColor: string;
   glow: boolean;
+  rainbow: boolean;
+  direction: number; // +1 forward, -1 reverse
   /** Bump to restart the trace from t = 0. */
   restartToken: number;
 }
@@ -167,29 +169,43 @@ function EpicycleCanvas(props: Props, ref: React.Ref<EpicycleCanvasHandle>) {
         }
 
         if (path.length > 1) {
-          if (p.glow) {
-            ctx.shadowColor = p.traceColor;
-            ctx.shadowBlur = 12;
-          }
-          ctx.strokeStyle = p.traceColor;
           ctx.lineWidth = p.strokeWidth;
           ctx.lineJoin = 'round';
           ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(path[0].x, path[0].y);
-          for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
+          if (p.rainbow) {
+            // Hue varies along the trail and drifts with time.
+            const shift = (time / TWO_PI) * 360;
+            for (let i = 1; i < path.length; i++) {
+              const hue = ((i / path.length) * 360 + shift) % 360;
+              ctx.strokeStyle = `hsl(${hue}, 80%, 55%)`;
+              ctx.beginPath();
+              ctx.moveTo(path[i - 1].x, path[i - 1].y);
+              ctx.lineTo(path[i].x, path[i].y);
+              ctx.stroke();
+            }
+          } else {
+            if (p.glow) {
+              ctx.shadowColor = p.traceColor;
+              ctx.shadowBlur = 12;
+            }
+            ctx.strokeStyle = p.traceColor;
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
         }
 
-        ctx.fillStyle = p.traceColor;
+        ctx.fillStyle = p.rainbow ? '#ffffff' : p.traceColor;
         ctx.beginPath();
         ctx.arc(x, y, Math.max(2, p.strokeWidth), 0, TWO_PI);
         ctx.fill();
 
         if (p.playing) {
-          time += (TWO_PI / SAMPLE_COUNT) * p.speed;
+          time += p.direction * (TWO_PI / SAMPLE_COUNT) * p.speed;
           if (time >= TWO_PI) time -= TWO_PI;
+          else if (time < 0) time += TWO_PI;
         }
       }
 
