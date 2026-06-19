@@ -1,15 +1,17 @@
-import { Slider } from './ui';
+import { Slider, Toggle } from './ui';
 
 interface ControlsProps {
   count: number;
   speed: number;
   zoom: number;
   playing: boolean;
+  reversed: boolean;
   maxCount: number;
   onCount: (v: number) => void;
   onSpeed: (v: number) => void;
   onZoom: (v: number) => void;
   onTogglePlay: () => void;
+  onToggleReverse: () => void;
   onRestart: () => void;
 }
 
@@ -18,11 +20,13 @@ export default function Controls({
   speed,
   zoom,
   playing,
+  reversed,
   maxCount,
   onCount,
   onSpeed,
   onZoom,
   onTogglePlay,
+  onToggleReverse,
   onRestart,
 }: ControlsProps) {
   return (
@@ -54,7 +58,11 @@ export default function Controls({
         <Slider label="Epicycles" value={count} min={20} max={maxCount} step={1} display={`${count}`} onChange={onCount} />
         <Slider label="Speed" value={speed} min={1} max={20} step={1} display={`${speed}×`} onChange={onSpeed} />
         <Slider label="Zoom" value={zoom} min={0.3} max={3} step={0.1} display={`${zoom.toFixed(1)}×`} onChange={onZoom} />
+        <div className="border-t border-edge pt-3">
+          <Toggle label="Reverse direction" checked={reversed} onChange={onToggleReverse} />
+        </div>
       </div>
+      <p className="mt-3 font-body text-xs text-ink/45">Shortcuts: Space play/pause · R restart</p>
     </div>
   );
 }

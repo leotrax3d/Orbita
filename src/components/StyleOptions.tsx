@@ -15,6 +15,7 @@ interface Props {
   theme: Theme;
   traceColor: string;
   glow: boolean;
+  rainbow: boolean;
   showCircles: boolean;
   showGhost: boolean;
   onStrokeWidth: (v: number) => void;
@@ -22,6 +23,7 @@ interface Props {
   onTheme: (v: Theme) => void;
   onTraceColor: (v: string) => void;
   onToggleGlow: () => void;
+  onToggleRainbow: () => void;
   onToggleCircles: () => void;
   onToggleGhost: () => void;
 }
@@ -32,6 +34,7 @@ export default function StyleOptions({
   theme,
   traceColor,
   glow,
+  rainbow,
   showCircles,
   showGhost,
   onStrokeWidth,
@@ -39,6 +42,7 @@ export default function StyleOptions({
   onTheme,
   onTraceColor,
   onToggleGlow,
+  onToggleRainbow,
   onToggleCircles,
   onToggleGhost,
 }: Props) {
@@ -80,9 +84,9 @@ export default function StyleOptions({
           />
         </div>
 
-        <div>
+        <div className={rainbow ? 'pointer-events-none opacity-40' : ''}>
           <span className="mb-1.5 block font-heading text-sm font-medium text-ink/80">Trace color</span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {TRACE_COLORS.map((c) => {
               const active = c.value === traceColor;
               return (
@@ -98,10 +102,24 @@ export default function StyleOptions({
                 />
               );
             })}
+            <label
+              title="Custom color"
+              className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border border-edge"
+              style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}
+            >
+              <input
+                type="color"
+                value={traceColor}
+                onChange={(e) => onTraceColor(e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Custom trace color"
+              />
+            </label>
           </div>
         </div>
 
         <div className="space-y-2.5 border-t border-edge pt-3">
+          <Toggle label="Rainbow trail" checked={rainbow} onChange={onToggleRainbow} />
           <Toggle label="Glow" checked={glow} onChange={onToggleGlow} />
           <Toggle label="Epicycle circles" checked={showCircles} onChange={onToggleCircles} />
           <Toggle label="Target overlay" checked={showGhost} onChange={onToggleGhost} />

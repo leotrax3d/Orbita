@@ -53,5 +53,41 @@
       </p>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Self-heal: when React mounts it replaces #root, removing #orbita-boot.
+      // If the placeholder is still here after a few seconds, the cached HTML is
+      // likely pointing at a stale (deleted) bundle hash. Reload once with a
+      // cache-busting query so GitHub Pages serves the current index.html; if it
+      // still fails, offer a manual reload.
+      (function () {
+        function bust() {
+          var base = location.href.split('?')[0].split('#')[0];
+          location.replace(base + '?r=' + Date.now());
+        }
+        window.__orbitaBust = bust;
+        setTimeout(function () {
+          var boot = document.getElementById('orbita-boot');
+          if (!boot) return; // app mounted and replaced the placeholder
+          var KEY = 'orbita-selfheal';
+          try {
+            if (!sessionStorage.getItem(KEY)) {
+              sessionStorage.setItem(KEY, '1');
+              bust();
+              return;
+            }
+          } catch (e) {
+            bust();
+            return;
+          }
+          boot.innerHTML =
+            '<div style="text-align:center;max-width:22rem">' +
+            '<p style="margin:0 0 .25rem;font-weight:600">Orbita could not load.</p>' +
+            '<p style="margin:0 0 .9rem;font-size:.85rem;color:#6b665e">Your browser may be holding an outdated version.</p>' +
+            '<button onclick="try{sessionStorage.clear()}catch(e){};window.__orbitaBust()" ' +
+            'style="padding:.5rem 1.1rem;border:1px solid #e8e6dc;border-radius:.5rem;background:#fff;cursor:pointer;font:inherit;color:#d97757;font-weight:600">Reload</button>' +
+            '</div>';
+        }, 7000);
+      })();
+    </script>
   </body>
 </html>

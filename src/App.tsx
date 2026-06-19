@@ -6,6 +6,7 @@ import PresetPicker from './components/PresetPicker';
 import StyleOptions from './components/StyleOptions';
 import ExportPanel from './components/ExportPanel';
 import ExplainPanel from './components/ExplainPanel';
+import Spectrum from './components/Spectrum';
 import LiveDraw from './components/LiveDraw';
 import Header from './components/Header';
 import { Tabs } from './components/ui';
@@ -55,6 +56,8 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>('light');
   const [traceColor, setTraceColor] = useState('#d97757');
   const [glow, setGlow] = useState(false);
+  const [rainbow, setRainbow] = useState(false);
+  const [reversed, setReversed] = useState(false);
   const [showCircles, setShowCircles] = useState(true);
   const [showGhost, setShowGhost] = useState(false);
 
@@ -181,6 +184,7 @@ export default function App() {
       if (e.data && e.data.size) chunksRef.current.push(e.data);
     };
     recorder.onstop = () => {
+      if (chunksRef.current.length === 0) return;
       const blob = new Blob(chunksRef.current, { type: mime });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -214,6 +218,35 @@ export default function App() {
     return () => window.clearInterval(id);
   }, [recording, stopRecording]);
 
+  // The app mounted: clear the self-heal reload guard and tidy the cache-bust query.
+  useEffect(() => {
+    try {
+      window.sessionStorage.removeItem('orbita-selfheal');
+      if (window.location.search) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Keyboard shortcuts: Space = play/pause, R = restart.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(el.tagName)) return;
+      if (drawing) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setPlaying((p) => !p);
+      } else if (e.key === 'r' || e.key === 'R') {
+        restart();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawing, restart]);
+
   const activeCount = Math.min(count, shape.epicycles.length);
 
   return (
@@ -238,6 +271,8 @@ export default function App() {
               theme={theme}
               traceColor={traceColor}
               glow={glow}
+              rainbow={rainbow}
+              direction={reversed ? -1 : 1}
               restartToken={restartToken}
             />
 
@@ -297,10 +332,12 @@ export default function App() {
                   zoom={zoom}
                   playing={playing}
                   maxCount={500}
+                  reversed={reversed}
                   onCount={setCount}
                   onSpeed={setSpeed}
                   onZoom={setZoom}
                   onTogglePlay={() => setPlaying((p) => !p)}
+                  onToggleReverse={() => setReversed((v) => !v)}
                   onRestart={restart}
                 />
               )}
@@ -312,6 +349,7 @@ export default function App() {
                   theme={theme}
                   traceColor={traceColor}
                   glow={glow}
+                  rainbow={rainbow}
                   showCircles={showCircles}
                   showGhost={showGhost}
                   onStrokeWidth={setStrokeWidth}
@@ -319,6 +357,7 @@ export default function App() {
                   onTheme={setTheme}
                   onTraceColor={setTraceColor}
                   onToggleGlow={() => setGlow((v) => !v)}
+                  onToggleRainbow={() => setRainbow((v) => !v)}
                   onToggleCircles={() => setShowCircles((v) => !v)}
                   onToggleGhost={() => setShowGhost((v) => !v)}
                 />
@@ -337,7 +376,12 @@ export default function App() {
                 />
               )}
 
-              {tab === 'explain' && <ExplainPanel />}
+              {tab === 'explain' && (
+                <>
+                  <ExplainPanel />
+                  <Spectrum epicycles={shape.epicycles} />
+                </>
+              )}
             </div>
           </aside>
         </div>
